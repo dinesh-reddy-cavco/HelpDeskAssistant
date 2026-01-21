@@ -88,8 +88,9 @@ class ChatService:
             )
             
             # Log conversation to database (fire and forget)
+            conversation_record_id = 0
             try:
-                await self.logging_service.log_conversation(
+                conversation_record_id = await self.logging_service.log_conversation(
                     conversation_id=conversation_id,
                     username=username,
                     user_message=message,
@@ -106,7 +107,8 @@ class ChatService:
                 conversation_id=conversation_id,
                 confidence=confidence,
                 source=source,
-                requires_escalation=requires_escalation
+                requires_escalation=requires_escalation,
+                conversation_record_id=conversation_record_id
             )
             
         except Exception as e:

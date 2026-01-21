@@ -307,6 +307,86 @@ header h1 {
     opacity: 0.8;
 }
 
+/* Feedback buttons */
+.feedback-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: center;
+}
+
+.feedback-btn {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 36px;
+}
+
+.feedback-btn:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+    transform: scale(1.05);
+}
+
+.feedback-btn:active {
+    transform: scale(0.95);
+}
+
+.feedback-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.feedback-thumbs-up:hover {
+    border-color: #4caf50;
+    background: #e8f5e9;
+}
+
+.feedback-thumbs-down:hover {
+    border-color: #f44336;
+    background: #ffebee;
+}
+
+/* Feedback modal specific styles */
+#feedback-modal .modal-content {
+    max-width: 500px;
+}
+
+#reason-codes-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+}
+
+#reason-codes-container label {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#reason-codes-container label:hover {
+    border-color: #667eea;
+}
+
+#reason-codes-container input[type="radio"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {

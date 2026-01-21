@@ -35,7 +35,7 @@
         
         <div class="chat-container">
             <div id="chat-messages" class="chat-messages">
-                <div class="message assistant">
+                <div class="message assistant" data-conversation-id="">
                     <div class="message-content">
                         <p>Hello! I'm your IT support assistant. How can I help you today?</p>
                     </div>
@@ -65,6 +65,36 @@
         <div id="loading-indicator" class="loading-indicator" style="display: none;">
             <div class="spinner"></div>
             <span>Thinking...</span>
+        </div>
+    </div>
+    
+    <!-- Feedback Reason Modal -->
+    <div id="feedback-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Why was this response not helpful?</h2>
+            <p>Please select a reason to help us improve:</p>
+            <form id="feedback-reason-form">
+                <div id="reason-codes-container"></div>
+                <div style="margin-top: 16px;">
+                    <label for="feedback-notes" style="display: block; margin-bottom: 8px; font-size: 14px; color: #666;">
+                        Additional notes (optional):
+                    </label>
+                    <textarea 
+                        id="feedback-notes" 
+                        rows="3" 
+                        style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical;"
+                        placeholder="Tell us more about what went wrong..."
+                    ></textarea>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="button" id="feedback-cancel-btn" style="flex: 1; background: #e0e0e0; color: #333;">
+                        Cancel
+                    </button>
+                    <button type="submit" style="flex: 1;">
+                        Submit Feedback
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     

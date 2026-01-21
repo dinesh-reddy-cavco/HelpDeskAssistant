@@ -2,8 +2,9 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.models import ChatRequest, ChatResponse
+from app.models import ChatRequest, ChatResponse, FeedbackRequest, FeedbackResponse, FEEDBACK_REASON_CODES
 from app.services.chat_service import ChatService
+from app.services.feedback_service import FeedbackService
 from app.database.db import init_db
 from app.config import settings
 import logging
@@ -48,6 +49,12 @@ class StructuredFormatter(logging.Formatter):
             log_entry['source'] = record.source
         if hasattr(record, 'requires_escalation'):
             log_entry['requires_escalation'] = record.requires_escalation
+        if hasattr(record, 'feedback_rating'):
+            log_entry['feedback_rating'] = record.feedback_rating
+        if hasattr(record, 'feedback_reason_code'):
+            log_entry['feedback_reason_code'] = record.feedback_reason_code
+        if hasattr(record, 'conversation_record_id'):
+            log_entry['conversation_record_id'] = record.conversation_record_id
         if record.exc_info:
             log_entry['exception'] = self.formatException(record.exc_info)
         
@@ -109,6 +116,7 @@ app.add_middleware(
 
 # Initialize services
 chat_service = ChatService()
+feedback_service = FeedbackService()
 
 
 @app.get("/")
@@ -199,6 +207,83 @@ async def chat(request: ChatRequest):
             exc_info=True
         )
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/api/feedback", response_model=FeedbackResponse)
+async def submit_feedback(request: FeedbackRequest):
+    """
+    Submit feedback for a conversation.
+    
+    Args:
+        request: FeedbackRequest with rating, reason_code (for thumbs_down), and optional notes
+        
+    Returns:
+        FeedbackResponse indicating success or failure
+    """
+    try:
+        # Validate thumbs_down requires reason_code
+        if request.rating == "thumbs_down" and not request.reason_code:
+            raise HTTPException(
+                status_code=400,
+                detail="reason_code is required when rating is 'thumbs_down'"
+            )
+        
+        # Validate reason_code if provided
+        if request.reason_code and request.reason_code not in FEEDBACK_REASON_CODES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid reason_code. Must be one of: {list(FEEDBACK_REASON_CODES.keys())}"
+            )
+        
+        # Submit feedback
+        success = await feedback_service.submit_feedback(
+            conversation_record_id=request.conversation_record_id,
+            rating=request.rating,
+            reason_code=request.reason_code,
+            notes=request.notes
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Conversation record {request.conversation_record_id} not found"
+            )
+        
+        logger.info(
+            "Feedback submitted",
+            extra={
+                "conversation_record_id": request.conversation_record_id,
+                "rating": request.rating,
+                "reason_code": request.reason_code
+            }
+        )
+        
+        return FeedbackResponse(
+            success=True,
+            message="Feedback submitted successfully",
+            conversation_record_id=request.conversation_record_id
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Error in feedback endpoint",
+            extra={
+                "conversation_record_id": request.conversation_record_id if hasattr(request, 'conversation_record_id') else None,
+                "error": str(e)
+            },
+            exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.get("/api/feedback/reason-codes")
+async def get_feedback_reason_codes():
+    """Get available feedback reason codes for thumbs down."""
+    return {
+        "reason_codes": FEEDBACK_REASON_CODES
+    }
 
 
 if __name__ == "__main__":

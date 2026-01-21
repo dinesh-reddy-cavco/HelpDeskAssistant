@@ -20,7 +20,7 @@ class LoggingService:
         confidence: Optional[str] = None,
         source: Optional[str] = None,
         requires_escalation: bool = False
-    ):
+    ) -> int:
         """
         Log a conversation to the database.
         
@@ -32,6 +32,9 @@ class LoggingService:
             confidence: Confidence level of the response
             source: Source of the answer (generic, rag, etc.)
             requires_escalation: Whether escalation is required
+            
+        Returns:
+            ID of the created conversation record (for feedback)
         """
         try:
             async with AsyncSessionLocal() as session:
@@ -46,17 +49,22 @@ class LoggingService:
                     timestamp=datetime.utcnow()
                 )
                 session.add(conversation)
+                await session.flush()  # Flush to get the ID
+                record_id = conversation.id
                 await session.commit()
                 logger.info(
                     "Conversation logged to database",
                     extra={
                         "username": username,
                         "conversation_id": conversation_id,
+                        "record_id": record_id,
                         "confidence": confidence,
                         "source": source,
                         "requires_escalation": requires_escalation
                     }
                 )
+                return record_id
         except Exception as e:
             logger.error(f"Error logging conversation: {str(e)}")
             # Don't raise - logging failures shouldn't break the chat
+            return 0
