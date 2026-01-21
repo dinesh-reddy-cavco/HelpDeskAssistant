@@ -144,8 +144,35 @@ Then navigate to `http://localhost:8080` in your browser.
 - The system will suggest escalation when uncertain
 - CORS is enabled for all origins in development (restrict in production)
 
+
 ## Next Steps (Phase 2 & 3)
 
 - **Phase 2**: Integrate Confluence documentation and ticket history (RAG)
 - **Phase 3**: Smart ticket creation with ServiceDesk Plus integration
 - **Future**: Entra ID authentication, production RAG improvements
+
+---
+
+## ⚠️ Critical TODOs & Deployment Considerations
+
+- **SQLite is used by default for conversation logging.**
+  - The backend creates a local `chatbot.db` SQLite file at startup (see `backend/app/config.py`).
+  - **For production, replace SQLite with a managed database** (e.g., Azure SQL, PostgreSQL, MySQL) by setting the `DATABASE_URL` in your `.env` file and updating dependencies.
+  - SQLite is not recommended for concurrent/multi-user production workloads.
+
+
+- **Environment variables**: Never commit secrets or production credentials. Use `.env` for local dev, and secure secret management in production.
+
+- **CORS is open to all origins** for development. Restrict `allow_origins` in `main.py` before deploying to production.
+
+- **Logging**: Logs are written to the `logs/` directory. Ensure log rotation and secure log storage in production. consider external log storage. 
+
+- **API keys and credentials**: Rotate regularly and use secure storage (Azure Key Vault, AWS Secrets Manager, etc.).
+
+- **Frontend API URL**: If deploying backend/frontend separately, update `API_BASE_URL` in `frontend/app.js`. Using localhost now
+
+- **Security**: No authentication is enforced in Phase 1. Add authentication (e.g., Entra ID, OAuth) before production use.
+
+- **Error handling**: The backend logs errors but may expose details in API responses. Harden error handling for production.
+
+- **Scalability**: The current setup is for demo/dev. For production, use a WSGI/ASGI server (e.g., Gunicorn, Uvicorn with workers) behind a reverse proxy (e.g., Nginx, Azure App Service).
