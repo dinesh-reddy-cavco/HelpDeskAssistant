@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cavco Help Desk Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Username Modal -->
+    <div id="username-modal" class="modal">
+        <div class="modal-content">
+            <h2>Welcome to Cavco Help Desk Assistant</h2>
+            <p>Please enter your username to continue:</p>
+            <form id="username-form">
+                <input 
+                    type="text" 
+                    id="username-input" 
+                    placeholder="Enter your username" 
+                    autocomplete="username"
+                    required
+                    autofocus
+                >
+                <button type="submit">Continue</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container" id="main-container" style="display: none;">
+        <header>
+            <h1>Cavco Help Desk Assistant</h1>
+            <p class="subtitle">AI-powered IT support - Phase 1</p>
+            <p class="user-info" id="user-info"></p>
+        </header>
+        
+        <div class="chat-container">
+            <div id="chat-messages" class="chat-messages">
+                <div class="message assistant">
+                    <div class="message-content">
+                        <p>Hello! I'm your IT support assistant. How can I help you today?</p>
+                    </div>
+                    <div class="message-time"></div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <form id="chat-form">
+                    <input 
+                        type="text" 
+                        id="message-input" 
+                        placeholder="Type your question here..." 
+                        autocomplete="off"
+                        required
+                    >
+                    <button type="submit" id="send-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div id="loading-indicator" class="loading-indicator" style="display: none;">
+            <div class="spinner"></div>
+            <span>Thinking...</span>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
