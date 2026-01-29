@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 # RAG answer types (do not mix generic and RAG)
-AnswerType = Literal["GENERIC", "RAG", "ESCALATION_REQUIRED"]
+AnswerType = Literal["GENERIC", "RAG", "ESCALATION_REQUIRED", "OFF_TOPIC"]
 
 
 class SourceDocument(BaseModel):
@@ -40,7 +40,7 @@ class ChatResponse(BaseModel):
     confidence: Optional[str] = None  # legacy: "high" / "low"
     confidence_score: Optional[float] = None  # 0–1 for RAG flow
     source: Optional[str] = None  # "generic", "rag"
-    answer_type: Optional[AnswerType] = None  # GENERIC | RAG | ESCALATION_REQUIRED
+    answer_type: Optional[AnswerType] = None  # GENERIC | RAG | ESCALATION_REQUIRED | OFF_TOPIC
     sources: Optional[List[SourceDocument]] = None  # RAG only
     requires_escalation: bool = False
     conversation_record_id: Optional[int] = None  # ID of the conversation record for feedback

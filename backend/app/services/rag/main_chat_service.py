@@ -132,8 +132,34 @@ class MainChatService:
             answer_type = "GENERIC"
             confidence_str = "high"
             source_str = "generic"
+        elif intent == "OFF_TOPIC":
+            # 2b. Off-topic (weather, sports, etc.): decline politely, no RAG, no generic answer
+            response_text = settings.off_topic_message
+            confidence_score = 0.0
+            answer_type = "OFF_TOPIC"
+            requires_escalation = False
+            sources = []
+            confidence_str = "low"
+            source_str = "off_topic"
+            logger.info(
+                "Intent OFF_TOPIC: declining non-IT question",
+                extra={"user_query": message[:200], "intent": intent},
+            )
+        elif intent == "UNKNOWN":
+            # 2c. UNKNOWN: escalate (RAG only runs for CAVCO_SPECIFIC)
+            response_text = settings.escalation_message
+            confidence_score = 0.0
+            answer_type = "ESCALATION_REQUIRED"
+            requires_escalation = True
+            sources = []
+            confidence_str = "low"
+            source_str = "unknown"
+            logger.info(
+                "Intent UNKNOWN: escalating (RAG only runs for CAVCO_SPECIFIC)",
+                extra={"user_query": message[:200], "intent": intent},
+            )
         else:
-            # 2b. CAVCO_SPECIFIC or UNKNOWN: RAG path (retrieve → generate → score → gate)
+            # 2d. CAVCO_SPECIFIC: RAG path (retrieve → generate → score → gate)
             if not settings.azure_search_endpoint or not settings.azure_search_key:
                 response_text = settings.escalation_message
                 confidence_score = 0.0

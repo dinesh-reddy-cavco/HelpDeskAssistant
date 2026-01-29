@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     escalation_message: str = (
         "I don't have enough confidence to answer this. This issue may require creating a support ticket."
     )
+    off_topic_message: str = (
+        "I'm an IT help desk assistant and can only help with IT-related questions. "
+        "I can't answer questions about weather, sports, news, or other non-IT topics. Is there an IT issue I can help with?"
+    )
     
     # Application Configuration
     app_env: str = "development"

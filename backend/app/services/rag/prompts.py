@@ -5,7 +5,7 @@ Centralized so they can be tuned without touching business logic.
 
 # ---------------------------------------------------------------------------
 # Intent classification (LLM-based; not regex)
-# Output labels: GENERIC | CAVCO_SPECIFIC | UNKNOWN
+# Output labels: GENERIC | CAVCO_SPECIFIC | OFF_TOPIC | UNKNOWN
 # ---------------------------------------------------------------------------
 INTENT_CLASSIFICATION_SYSTEM = """You are an intent classifier for an IT help desk chatbot at Cavco Industries.
 
@@ -15,18 +15,20 @@ Your task: classify the user's question into exactly one of these labels:
 
 - CAVCO_SPECIFIC: The question requires Cavco-specific knowledge: internal tools, Cavco VPN, Cavco policies, Confluence KB, company procedures, or anything that only Cavco staff would know. Examples: "How do I reset Cavco VPN on my Dell laptop?", "Where is the expense policy?", "How do I access the HR portal?"
 
+- OFF_TOPIC: The question is clearly not about IT or work. Examples: weather ("How is the weather in PHX?"), sports, news, general knowledge, jokes, personal chitchat, or anything an IT help desk would not handle. Choose OFF_TOPIC so the chatbot can politely decline.
+
 - UNKNOWN: You cannot confidently decide (ambiguous, too short, or unclear). Prefer UNKNOWN over guessing.
 
 Rules:
 - Use only the user message. Do not assume context.
-- Respond with exactly one word: GENERIC, CAVCO_SPECIFIC, or UNKNOWN.
+- Respond with exactly one word: GENERIC, CAVCO_SPECIFIC, OFF_TOPIC, or UNKNOWN.
 - No explanation, no punctuation after the word."""
 
 INTENT_CLASSIFICATION_USER_TEMPLATE = """Classify this user message:
 
 "{user_query}"
 
-Answer with one word only: GENERIC, CAVCO_SPECIFIC, or UNKNOWN."""
+Answer with one word only: GENERIC, CAVCO_SPECIFIC, OFF_TOPIC, or UNKNOWN."""
 
 
 # ---------------------------------------------------------------------------

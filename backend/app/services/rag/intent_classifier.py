@@ -1,6 +1,6 @@
 """
 Intent classification using the LLM (not regex).
-Outputs: GENERIC | CAVCO_SPECIFIC | UNKNOWN.
+Outputs: GENERIC | CAVCO_SPECIFIC | OFF_TOPIC | UNKNOWN.
 Generic questions must never hit the vector DB.
 """
 from __future__ import annotations
@@ -14,19 +14,19 @@ from app.services.rag.prompts import INTENT_CLASSIFICATION_SYSTEM, INTENT_CLASSI
 
 logger = logging.getLogger(__name__)
 
-IntentLabel = Literal["GENERIC", "CAVCO_SPECIFIC", "UNKNOWN"]
-VALID_LABELS: tuple[str, ...] = ("GENERIC", "CAVCO_SPECIFIC", "UNKNOWN")
+IntentLabel = Literal["GENERIC", "CAVCO_SPECIFIC", "OFF_TOPIC", "UNKNOWN"]
+VALID_LABELS: tuple[str, ...] = ("GENERIC", "CAVCO_SPECIFIC", "OFF_TOPIC", "UNKNOWN")
 
 
 class IntentClassifier:
-    """Classify user query as GENERIC, CAVCO_SPECIFIC, or UNKNOWN using the LLM."""
+    """Classify user query as GENERIC, CAVCO_SPECIFIC, OFF_TOPIC, or UNKNOWN using the LLM."""
 
     def __init__(self, openai_service: AzureOpenAIService | None = None):
         self._openai = openai_service or AzureOpenAIService()
 
     def classify(self, user_query: str) -> IntentLabel:
         """
-        Classify the user message. Returns one of GENERIC, CAVCO_SPECIFIC, UNKNOWN.
+        Classify the user message. Returns one of GENERIC, CAVCO_SPECIFIC, OFF_TOPIC, UNKNOWN.
         We use a dedicated completion call (no chat history) so classification is stateless.
         """
         if not user_query or not user_query.strip():
