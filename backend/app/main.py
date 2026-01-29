@@ -41,6 +41,8 @@ class StructuredFormatter(logging.Formatter):
             log_entry['conversation_id'] = record.conversation_id
         if hasattr(record, 'user_message'):
             log_entry['user_message'] = record.user_message[:200]  # Truncate long messages
+        if hasattr(record, 'user_query'):
+            log_entry['user_query'] = record.user_query[:200] if isinstance(record.user_query, str) else record.user_query
         if hasattr(record, 'assistant_response'):
             log_entry['assistant_response'] = record.assistant_response[:200]
         if hasattr(record, 'confidence'):
@@ -55,6 +57,29 @@ class StructuredFormatter(logging.Formatter):
             log_entry['feedback_reason_code'] = record.feedback_reason_code
         if hasattr(record, 'conversation_record_id'):
             log_entry['conversation_record_id'] = record.conversation_record_id
+        # RAG-related extras (for debugging intent → retrieval → confidence → decision)
+        if hasattr(record, 'intent'):
+            log_entry['intent'] = record.intent
+        if hasattr(record, 'retrieval_used'):
+            log_entry['retrieval_used'] = record.retrieval_used
+        if hasattr(record, 'document_ids'):
+            log_entry['document_ids'] = record.document_ids
+        if hasattr(record, 'page_titles'):
+            log_entry['page_titles'] = record.page_titles
+        if hasattr(record, 'num_docs'):
+            log_entry['num_docs'] = record.num_docs
+        if hasattr(record, 'confidence_score'):
+            log_entry['confidence_score'] = record.confidence_score
+        if hasattr(record, 'confidence_threshold'):
+            log_entry['confidence_threshold'] = record.confidence_threshold
+        if hasattr(record, 'answer_type'):
+            log_entry['answer_type'] = record.answer_type
+        if hasattr(record, 'final_decision'):
+            log_entry['final_decision'] = record.final_decision
+        if hasattr(record, 'escalation_gated'):
+            log_entry['escalation_gated'] = record.escalation_gated
+        if hasattr(record, 'top_k'):
+            log_entry['top_k'] = record.top_k
         if record.exc_info:
             log_entry['exception'] = self.formatException(record.exc_info)
         

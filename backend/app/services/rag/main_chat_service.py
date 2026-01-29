@@ -34,6 +34,17 @@ def _run_rag_path(
     retrieval_used = True
     docs = retrieve_docs(message, top_k=settings.rag_top_k)
     document_ids = [d.source_id for d in docs]
+    page_titles = [d.title or d.source_id for d in docs]
+    logger.info(
+        "Retrieval returned %d documents",
+        len(docs),
+        extra={
+            "num_docs": len(docs),
+            "document_ids": document_ids[:20],
+            "page_titles": page_titles[:20],
+            "user_query": message[:200],
+        },
+    )
     if not docs:
         return (
             "I couldn't find relevant information in the knowledge base. This issue may require creating a support ticket.",
@@ -47,7 +58,20 @@ def _run_rag_path(
     confidence_score = score_confidence(
         message, response_text, sources_count=len(docs), use_llm=True, openai_service=openai_svc
     )
-    if confidence_score < settings.confidence_threshold:
+    threshold = settings.confidence_threshold
+    escalation_gated = confidence_score < threshold
+    logger.info(
+        "Confidence: score=%.2f, threshold=%.2f, escalation_gated=%s",
+        confidence_score,
+        threshold,
+        escalation_gated,
+        extra={
+            "confidence_score": confidence_score,
+            "confidence_threshold": threshold,
+            "escalation_gated": escalation_gated,
+        },
+    )
+    if escalation_gated:
         response_text = settings.escalation_message
         answer_type = "ESCALATION_REQUIRED"
         requires_escalation = True
@@ -121,6 +145,11 @@ class MainChatService:
                 logger.warning("Azure AI Search not configured; returning escalation for non-GENERIC intent")
             else:
                 retrieval_used = True
+                logger.info(
+                    "RAG path: retrieving top_k=%s",
+                    settings.rag_top_k,
+                    extra={"intent": intent, "top_k": settings.rag_top_k},
+                )
                 (
                     response_text,
                     confidence_score,
@@ -132,14 +161,23 @@ class MainChatService:
                 confidence_str = "high" if (confidence_score or 0) >= settings.confidence_threshold else "low"
                 source_str = "rag"
 
-        # 3. Log request (user_query, intent, retrieval_used, document_ids, confidence_score, final_decision)
+        # 3. Log request: summary for console, full extras for file (intent, retrieval, docs, confidence, decision)
+        num_docs = len(document_ids)
+        score_str = f"{confidence_score:.2f}" if confidence_score is not None else "N/A"
+        summary_msg = (
+            f"Chat completed | intent={intent} retrieval={retrieval_used} docs={num_docs} "
+            f"confidence={score_str} answer_type={answer_type}"
+        )
+        page_titles = [d.title or d.source_id for d in (sources or [])][:20]
         logger.info(
-            "Chat request completed",
+            summary_msg,
             extra={
                 "user_query": message[:200],
                 "intent": intent,
                 "retrieval_used": retrieval_used,
-                "document_ids": document_ids[:10] if document_ids else [],
+                "document_ids": document_ids[:20],
+                "page_titles": page_titles,
+                "num_docs": num_docs,
                 "confidence_score": confidence_score,
                 "answer_type": answer_type,
                 "final_decision": answer_type,
