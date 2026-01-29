@@ -230,3 +230,4 @@ backend/logs/
 # Development
 dev_util/
 backend/start_backend.bat 
+dev_notebooks/

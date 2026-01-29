@@ -7,3 +7,9 @@ pydantic-settings
 python-multipart
 sqlalchemy
 aiosqlite
+
+# Ingestion (Confluence → Azure AI Search)
+requests
+beautifulsoup4
+azure-search-documents
+tiktoken
