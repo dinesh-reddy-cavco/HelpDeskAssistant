@@ -110,6 +110,10 @@ file_handler.setFormatter(StructuredFormatter())
 root_logger.addHandler(console_handler)
 root_logger.addHandler(file_handler)
 
+# Reduce noise from HTTP clients: Azure SDK and httpx log every request/response at INFO
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("azure").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 
