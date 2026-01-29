@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.models import ChatRequest, ChatResponse, FeedbackRequest, FeedbackResponse, FEEDBACK_REASON_CODES
-from app.services.chat_service import ChatService
+from app.services.rag.main_chat_service import MainChatService
 from app.services.feedback_service import FeedbackService
 from app.database.db import init_db
 from app.config import settings
@@ -114,8 +114,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize services
-chat_service = ChatService()
+# Initialize services (RAG flow: intent → generic or retrieve + RAG)
+chat_service = MainChatService()
 feedback_service = FeedbackService()
 
 
@@ -172,7 +172,7 @@ async def chat(request: ChatRequest):
         if request.history:
             history = request.history
         
-        # Process message
+        # Process message (intent → GENERIC or RAG; confidence gating)
         response = await chat_service.process_message(
             message=request.message,
             username=request.username,
@@ -187,9 +187,11 @@ async def chat(request: ChatRequest):
                 "username": request.username,
                 "conversation_id": response.conversation_id,
                 "confidence": response.confidence,
+                "confidence_score": response.confidence_score,
                 "source": response.source,
+                "answer_type": response.answer_type,
                 "requires_escalation": response.requires_escalation,
-                "response_length": len(response.response)
+                "response_length": len(response.response),
             }
         )
         

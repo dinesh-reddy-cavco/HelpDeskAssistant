@@ -4,6 +4,20 @@ from typing import Optional, List, Literal
 from datetime import datetime
 
 
+# RAG answer types (do not mix generic and RAG)
+AnswerType = Literal["GENERIC", "RAG", "ESCALATION_REQUIRED"]
+
+
+class SourceDocument(BaseModel):
+    """Retrieved chunk with metadata for RAG sources."""
+    source_type: str  # e.g. "confluence", "ticket"
+    source_id: str  # page_id or ticket id
+    title: str  # page_title or ticket title
+    chunk_text: str
+    url: Optional[str] = None
+    section_title: Optional[str] = None
+
+
 class ChatMessage(BaseModel):
     """Single chat message."""
     role: str  # "user" or "assistant"
@@ -21,10 +35,13 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     """Response model for chat endpoint."""
-    response: str
+    response: str  # answer_text (alias kept for backward compatibility)
     conversation_id: str
-    confidence: Optional[str] = None
-    source: Optional[str] = None  # "generic", "rag", "ticket_creation"
+    confidence: Optional[str] = None  # legacy: "high" / "low"
+    confidence_score: Optional[float] = None  # 0–1 for RAG flow
+    source: Optional[str] = None  # "generic", "rag"
+    answer_type: Optional[AnswerType] = None  # GENERIC | RAG | ESCALATION_REQUIRED
+    sources: Optional[List[SourceDocument]] = None  # RAG only
     requires_escalation: bool = False
     conversation_record_id: Optional[int] = None  # ID of the conversation record for feedback
 

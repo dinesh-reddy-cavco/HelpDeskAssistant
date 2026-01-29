@@ -13,6 +13,21 @@ class Settings(BaseSettings):
     azure_foundry_api_version: str = "2024-05-01-preview"
     azure_foundry_deployment_name: str
     
+    # Azure AI Foundry — embeddings (for RAG retriever; same Foundry resource)
+    azure_foundry_embedding_deployment: Optional[str] = None  # e.g. text-embedding-3-small
+    
+    # Azure AI Search (RAG retrieval)
+    azure_search_endpoint: Optional[str] = None  # https://<name>.search.windows.net
+    azure_search_key: Optional[str] = None
+    azure_search_index_name: str = "confluence-chunks"
+    
+    # RAG behavior
+    rag_top_k: int = 5
+    confidence_threshold: float = 0.65  # Below this → ESCALATION_REQUIRED
+    escalation_message: str = (
+        "I don't have enough confidence to answer this. This issue may require creating a support ticket."
+    )
+    
     # Application Configuration
     app_env: str = "development"
     log_level: str = "INFO"

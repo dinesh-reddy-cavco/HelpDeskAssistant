@@ -2,7 +2,7 @@
 import os
 from openai import AzureOpenAI
 from app.config import settings
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional  # noqa: F401
 
 
 class AzureOpenAIService:
@@ -44,7 +44,8 @@ Remember: It's better to escalate than to give incorrect information."""
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: int = 500
+        max_tokens: int = 500,
+        system_prompt_override: Optional[str] = None,
     ) -> str:
         """
         Get chat completion from Azure OpenAI.
@@ -53,14 +54,15 @@ Remember: It's better to escalate than to give incorrect information."""
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 1.0)
             max_tokens: Maximum tokens in response
+            system_prompt_override: If set, use this instead of the default system prompt (for RAG/intent)
             
         Returns:
             Assistant's response text
         """
         try:
-            # Prepare messages with system prompt
+            system_content = system_prompt_override if system_prompt_override is not None else self.system_prompt
             formatted_messages = [
-                {"role": "system", "content": self.system_prompt}
+                {"role": "system", "content": system_content}
             ] + messages
             
             response = self.client.chat.completions.create(
