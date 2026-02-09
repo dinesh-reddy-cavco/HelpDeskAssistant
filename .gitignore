@@ -231,3 +231,6 @@ backend/logs/
 dev_util/
 backend/start_backend.bat 
 dev_notebooks/
+
+#local util
+local_run.sh
