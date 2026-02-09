@@ -2,9 +2,57 @@
 
 import json
 import logging
+import threading
 from datetime import datetime
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
+from typing import Any, Dict, Optional
+
+try:
+    from opencensus.ext.azure.log_exporter import AzureLogHandler
+except ImportError:  # pragma: no cover - optional dependency at runtime
+    AzureLogHandler = None
+
+
+STRUCTURED_EXTRA_FIELDS = [
+    "username",
+    "user_id",
+    "conversation_id",
+    "conversation_record_id",
+    "user_message",
+    "user_query",
+    "assistant_response",
+    "confidence",
+    "confidence_score",
+    "confidence_threshold",
+    "source",
+    "requires_escalation",
+    "feedback_rating",
+    "feedback_reason_code",
+    "intent",
+    "retrieval_used",
+    "document_ids",
+    "page_titles",
+    "num_docs",
+    "answer_type",
+    "final_decision",
+    "escalation_gated",
+    "top_k",
+    "message_length",
+    "response_length",
+    "error",
+]
+
+
+def _ensure_handler_lock(handler: logging.Handler) -> None:
+    """Ensure handler has a valid lock before it is used by logging internals."""
+    if getattr(handler, "lock", None) is None:
+        handler.createLock()
+    # Python 3.14 expects a context-manager lock in Handler.handle().
+    # Some third-party handlers (for example opencensus AzureLogHandler)
+    # intentionally set lock=None in createLock(), so force a real lock.
+    if getattr(handler, "lock", None) is None:
+        handler.lock = threading.RLock()
 
 
 class StructuredFormatter(logging.Formatter):
@@ -21,63 +69,47 @@ class StructuredFormatter(logging.Formatter):
             "line": record.lineno,
         }
 
-        # Add extra fields if present
-        if hasattr(record, "username"):
-            log_entry["username"] = record.username
-        if hasattr(record, "conversation_id"):
-            log_entry["conversation_id"] = record.conversation_id
-        if hasattr(record, "user_message"):
-            log_entry["user_message"] = record.user_message[:200]  # Truncate long messages
-        if hasattr(record, "user_query"):
-            log_entry["user_query"] = (
-                record.user_query[:200]
-                if isinstance(record.user_query, str)
-                else record.user_query
-            )
-        if hasattr(record, "assistant_response"):
-            log_entry["assistant_response"] = record.assistant_response[:200]
-        if hasattr(record, "confidence"):
-            log_entry["confidence"] = record.confidence
-        if hasattr(record, "source"):
-            log_entry["source"] = record.source
-        if hasattr(record, "requires_escalation"):
-            log_entry["requires_escalation"] = record.requires_escalation
-        if hasattr(record, "feedback_rating"):
-            log_entry["feedback_rating"] = record.feedback_rating
-        if hasattr(record, "feedback_reason_code"):
-            log_entry["feedback_reason_code"] = record.feedback_reason_code
-        if hasattr(record, "conversation_record_id"):
-            log_entry["conversation_record_id"] = record.conversation_record_id
-        # RAG-related extras (for debugging intent -> retrieval -> confidence -> decision)
-        if hasattr(record, "intent"):
-            log_entry["intent"] = record.intent
-        if hasattr(record, "retrieval_used"):
-            log_entry["retrieval_used"] = record.retrieval_used
-        if hasattr(record, "document_ids"):
-            log_entry["document_ids"] = record.document_ids
-        if hasattr(record, "page_titles"):
-            log_entry["page_titles"] = record.page_titles
-        if hasattr(record, "num_docs"):
-            log_entry["num_docs"] = record.num_docs
-        if hasattr(record, "confidence_score"):
-            log_entry["confidence_score"] = record.confidence_score
-        if hasattr(record, "confidence_threshold"):
-            log_entry["confidence_threshold"] = record.confidence_threshold
-        if hasattr(record, "answer_type"):
-            log_entry["answer_type"] = record.answer_type
-        if hasattr(record, "final_decision"):
-            log_entry["final_decision"] = record.final_decision
-        if hasattr(record, "escalation_gated"):
-            log_entry["escalation_gated"] = record.escalation_gated
-        if hasattr(record, "top_k"):
-            log_entry["top_k"] = record.top_k
+        for field in STRUCTURED_EXTRA_FIELDS:
+            if hasattr(record, field):
+                value = getattr(record, field)
+                if field in {"user_message", "user_query", "assistant_response"} and isinstance(value, str):
+                    value = value[:200]
+                log_entry[field] = value
+
+        if "user_id" not in log_entry and "username" in log_entry:
+            log_entry["user_id"] = log_entry["username"]
         if record.exc_info:
             log_entry["exception"] = self.formatException(record.exc_info)
 
         return json.dumps(log_entry)
 
 
-def configure_logging(log_level: str = "INFO") -> None:
+class AppInsightsDimensionsFilter(logging.Filter):
+    """Attach custom dimensions to records for Azure Application Insights queries."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        dimensions: Dict[str, Any] = {}
+        for field in STRUCTURED_EXTRA_FIELDS:
+            if hasattr(record, field):
+                dimensions[field] = getattr(record, field)
+
+        if "user_id" not in dimensions and "username" in dimensions:
+            dimensions["user_id"] = dimensions["username"]
+
+        if dimensions:
+            existing = getattr(record, "custom_dimensions", None)
+            if isinstance(existing, dict):
+                existing.update(dimensions)
+                record.custom_dimensions = existing
+            else:
+                record.custom_dimensions = dimensions
+        return True
+
+
+def configure_logging(
+    log_level: str = "INFO",
+    app_insights_connection_string: Optional[str] = None,
+) -> None:
     """Configure root logger and standard noise filters for the app."""
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
@@ -94,18 +126,49 @@ def configure_logging(log_level: str = "INFO") -> None:
         console_handler.setFormatter(
             logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         )
+        _ensure_handler_lock(console_handler)
         root_logger.addHandler(console_handler)
 
     if "app_file_handler" not in existing_handler_names:
-        file_handler = RotatingFileHandler(
+        file_handler = TimedRotatingFileHandler(
             log_dir / "app.log",
-            maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=5,
+            when="midnight",
+            interval=1,
+            backupCount=30,
+            utc=True,
         )
+        file_handler.suffix = "%Y-%m-%d"
         file_handler.set_name("app_file_handler")
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(StructuredFormatter())
+        _ensure_handler_lock(file_handler)
         root_logger.addHandler(file_handler)
+
+    if (
+        app_insights_connection_string
+        and AzureLogHandler is not None
+        and "app_insights_handler" not in existing_handler_names
+    ):
+        try:
+            app_insights_handler = AzureLogHandler(
+                connection_string=app_insights_connection_string
+            )
+            app_insights_handler.set_name("app_insights_handler")
+            app_insights_handler.setLevel(getattr(logging, log_level.upper()))
+            app_insights_handler.addFilter(AppInsightsDimensionsFilter())
+            _ensure_handler_lock(app_insights_handler)
+            root_logger.addHandler(app_insights_handler)
+        except Exception as exc:
+            root_logger.warning(
+                "Failed to configure Azure Application Insights logging handler: %s",
+                exc,
+            )
+    elif app_insights_connection_string and AzureLogHandler is None:
+        root_logger.warning(
+            "Application Insights connection string is configured, "
+            "but 'opencensus-ext-azure' is not installed. "
+            "Install it to enable Azure log export."
+        )
 
     # Reduce noise from HTTP clients: Azure SDK and httpx log every request/response at INFO
     logging.getLogger("httpx").setLevel(logging.WARNING)

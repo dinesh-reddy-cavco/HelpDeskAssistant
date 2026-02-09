@@ -56,11 +56,12 @@ class LoggingService:
                     "Conversation logged to database",
                     extra={
                         "username": username,
+                        "user_id": username,
                         "conversation_id": conversation_id,
-                        "record_id": record_id,
+                        "conversation_record_id": record_id,
                         "confidence": confidence,
                         "source": source,
-                        "requires_escalation": requires_escalation
+                        "requires_escalation": requires_escalation,
                     }
                 )
                 return record_id

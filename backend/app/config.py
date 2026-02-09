@@ -1,4 +1,5 @@
 """Configuration management for the application."""
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from typing import Optional
 
@@ -35,13 +36,16 @@ class Settings(BaseSettings):
     # Application Configuration
     app_env: str = "development"
     log_level: str = "INFO"
+    application_insights_connection_string: Optional[str] = None
     
     # Database Configuration
     database_url: str = "sqlite+aiosqlite:///./chatbot.db"
     
     class Config:
-        env_file = ".env"
+        # Always load the single root-level .env file, regardless of current working directory.
+        env_file = Path(__file__).resolve().parents[2] / ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 # Global settings instance

@@ -11,7 +11,10 @@ from app.logging_config import configure_logging
 import logging
 from contextlib import asynccontextmanager
 
-configure_logging(settings.log_level)
+configure_logging(
+    settings.log_level,
+    settings.application_insights_connection_string,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +92,10 @@ async def chat(request: ChatRequest):
             "Chat request received",
             extra={
                 "username": request.username,
+                "user_id": request.username,
                 "conversation_id": request.conversation_id or "new",
                 "user_message": request.message,
-                "message_length": len(request.message)
+                "message_length": len(request.message),
             }
         )
         
@@ -113,6 +117,7 @@ async def chat(request: ChatRequest):
             "Chat response generated",
             extra={
                 "username": request.username,
+                "user_id": request.username,
                 "conversation_id": response.conversation_id,
                 "confidence": response.confidence,
                 "confidence_score": response.confidence_score,
@@ -132,7 +137,9 @@ async def chat(request: ChatRequest):
             "Error in chat endpoint",
             extra={
                 "username": request.username if hasattr(request, 'username') else "unknown",
-                "error": str(e)
+                "user_id": request.username if hasattr(request, "username") else "unknown",
+                "conversation_id": request.conversation_id if hasattr(request, "conversation_id") else None,
+                "error": str(e),
             },
             exc_info=True
         )

@@ -26,6 +26,8 @@ def _run_rag_path(
     message: str,
     answer_gen: AnswerGenerator,
     openai_svc: AzureOpenAIService,
+    username: str,
+    conversation_id: str,
 ) -> tuple[str, float, str, bool, List[SourceDocument], List[str]]:
     """
     Run RAG: retrieve → generate → score → gate.
@@ -39,6 +41,9 @@ def _run_rag_path(
         "Retrieval returned %d documents",
         len(docs),
         extra={
+            "username": username,
+            "user_id": username,
+            "conversation_id": conversation_id,
             "num_docs": len(docs),
             "document_ids": document_ids[:20],
             "page_titles": page_titles[:20],
@@ -66,6 +71,9 @@ def _run_rag_path(
         threshold,
         escalation_gated,
         extra={
+            "username": username,
+            "user_id": username,
+            "conversation_id": conversation_id,
             "confidence_score": confidence_score,
             "confidence_threshold": threshold,
             "escalation_gated": escalation_gated,
@@ -122,7 +130,13 @@ class MainChatService:
         intent = self._intent.classify(message)
         logger.info(
             "Intent classified",
-            extra={"user_query": message[:200], "intent": intent},
+            extra={
+                "username": username,
+                "user_id": username,
+                "conversation_id": cid,
+                "user_query": message[:200],
+                "intent": intent,
+            },
         )
 
         if intent == "GENERIC":
@@ -143,7 +157,13 @@ class MainChatService:
             source_str = "off_topic"
             logger.info(
                 "Intent OFF_TOPIC: declining non-IT question",
-                extra={"user_query": message[:200], "intent": intent},
+                extra={
+                    "username": username,
+                    "user_id": username,
+                    "conversation_id": cid,
+                    "user_query": message[:200],
+                    "intent": intent,
+                },
             )
         elif intent == "UNKNOWN":
             # 2c. UNKNOWN: escalate (RAG only runs for CAVCO_SPECIFIC)
@@ -156,7 +176,13 @@ class MainChatService:
             source_str = "unknown"
             logger.info(
                 "Intent UNKNOWN: escalating (RAG only runs for CAVCO_SPECIFIC)",
-                extra={"user_query": message[:200], "intent": intent},
+                extra={
+                    "username": username,
+                    "user_id": username,
+                    "conversation_id": cid,
+                    "user_query": message[:200],
+                    "intent": intent,
+                },
             )
         else:
             # 2d. CAVCO_SPECIFIC: RAG path (retrieve → generate → score → gate)
@@ -174,7 +200,13 @@ class MainChatService:
                 logger.info(
                     "RAG path: retrieving top_k=%s",
                     settings.rag_top_k,
-                    extra={"intent": intent, "top_k": settings.rag_top_k},
+                    extra={
+                        "username": username,
+                        "user_id": username,
+                        "conversation_id": cid,
+                        "intent": intent,
+                        "top_k": settings.rag_top_k,
+                    },
                 )
                 (
                     response_text,
@@ -183,7 +215,13 @@ class MainChatService:
                     requires_escalation,
                     sources,
                     document_ids,
-                ) = _run_rag_path(message, self._answer_gen, self._openai)
+                ) = _run_rag_path(
+                    message,
+                    self._answer_gen,
+                    self._openai,
+                    username,
+                    cid,
+                )
                 confidence_str = "high" if (confidence_score or 0) >= settings.confidence_threshold else "low"
                 source_str = "rag"
 
@@ -198,6 +236,9 @@ class MainChatService:
         logger.info(
             summary_msg,
             extra={
+                "username": username,
+                "user_id": username,
+                "conversation_id": cid,
                 "user_query": message[:200],
                 "intent": intent,
                 "retrieval_used": retrieval_used,

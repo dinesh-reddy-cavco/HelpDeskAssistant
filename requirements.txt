@@ -13,3 +13,4 @@ requests
 beautifulsoup4
 azure-search-documents
 tiktoken
+opencensus-ext-azure

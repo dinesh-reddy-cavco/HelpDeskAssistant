@@ -13,7 +13,7 @@ Your task: classify the user's question into exactly one of these labels:
 
 - GENERIC: The question can be confidently answered using general IT knowledge (e.g. "How do I restart a router?", "What is VPN?"). No company-specific policies, tools, or internal procedures are required.
 
-- CAVCO_SPECIFIC: The question requires Cavco-specific knowledge: internal tools, Cavco VPN, Cavco policies, Confluence KB, company procedures, or anything that only Cavco staff would know. Examples: "How do I reset Cavco VPN on my Dell laptop?", "Where is the expense policy?", "How do I access the HR portal?"
+- CAVCO_SPECIFIC: The question requires Cavco-specific knowledge: internal tools, DEACOM, Cavco VPN, Cavco policies, Confluence KB, company procedures, or anything that only Cavco staff would know. Examples: "How do I reset Cavco VPN on my Dell laptop?", "Where is the expense policy?", "How do I access the HR portal?"
 
 - OFF_TOPIC: The question is clearly not about IT or work. Examples: weather ("How is the weather in PHX?"), sports, news, general knowledge, jokes, personal chitchat, or anything an IT help desk would not handle. Choose OFF_TOPIC so the chatbot can politely decline.
 
