@@ -2,6 +2,11 @@
 
 AI-assisted first line of support for IT help desk operations.
 
+## Documentation
+
+- `docs/azure-resources.md` - Azure service configuration and reference notes.
+- `docs/deploy-windows-onprem.md` - Deployment runbook for on-prem Windows VM.
+
 ## Phase 1: Foundation & Safe First Demo
 
 This phase includes:

@@ -1,5 +1,5 @@
 // Configuration
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:8000' : window.location.origin;
 let conversationId = null;
 let username = null;
 let feedbackReasonCodes = {}; // Will be loaded from API
